@@ -10,11 +10,21 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
     error InvalidParams();
     error LessThanMinimumWithdrawAmount();
     error NoPermission();
+    error MintLockedFbtcRequestFailed();
+
+    event LockedFBTCSet(address lockedFBTC);
+    event MinimumWithdrawAmountSet(uint256 minimumWithdrawAmount);
+    event WithdrawNativeBTC(uint256 amount, uint256 realAmount);
+    event Initialize(
+        address owner,
+        address lorenzoAdmin,
+        address fbtc,
+        uint256 minimumWithdrawAmount
+    );
 
     address public lockedFBTC;
     address public fbtc;
     address public lorenzoAdmin;
-
     uint256 public minimumWithdrawAmount;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -38,19 +48,21 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
         address fbtc_,
         uint256 minimumWithdrawAmount_
     ) external initializer {
-        __Pausable_init();
-        __Ownable_init(owner_);
-
         if (
+            owner_ == address(0) ||
             fbtc_ == address(0) ||
             lorenzoAdmin_ == address(0) ||
             minimumWithdrawAmount_ <= 1000000
         ) {
             revert InvalidParams();
         }
+        __Pausable_init();
+        __Ownable_init(owner_);
+
         fbtc = fbtc_;
         lorenzoAdmin = lorenzoAdmin_;
         minimumWithdrawAmount = minimumWithdrawAmount_;
+        emit Initialize(owner_, lorenzoAdmin_, fbtc_, minimumWithdrawAmount_);
     }
 
     // =========================
@@ -62,6 +74,7 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
             revert InvalidParams();
         }
         lockedFBTC = lockedFBTC_;
+        emit LockedFBTCSet(lockedFBTC);
     }
 
     function pause() external onlyOwner {
@@ -79,6 +92,7 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
             revert InvalidParams();
         }
         minimumWithdrawAmount = minimumWithdrawAmount_;
+        emit MinimumWithdrawAmountSet(minimumWithdrawAmount);
     }
 
     function withdrawNativeBTC() external whenNotPaused onlyLorenzoAdmin {
@@ -86,6 +100,12 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
         if (balance < minimumWithdrawAmount) {
             revert LessThanMinimumWithdrawAmount();
         }
-        ILockedFBTC(lockedFBTC).mintLockedFbtcRequest(balance);
+        uint256 realAmount = ILockedFBTC(lockedFBTC).mintLockedFbtcRequest(
+            balance
+        );
+        if (realAmount == 0) {
+            revert MintLockedFbtcRequestFailed();
+        }
+        emit WithdrawNativeBTC(balance, realAmount);
     }
 }
