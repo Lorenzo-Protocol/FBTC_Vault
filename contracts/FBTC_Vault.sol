@@ -7,12 +7,13 @@ import {ILockedFBTC} from "./interfaces/ILockedFBTC.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
-    error InvalidParams();
+    error InvalidParam();
     error LessThanMinimumWithdrawAmount();
     error NoPermission();
     error MintLockedFbtcRequestFailed();
 
     event LockedFBTCSet(address lockedFBTC);
+    event LorenzoAdminSet(address lorenzoAdmin);
     event MinimumWithdrawAmountSet(uint256 minimumWithdrawAmount);
     event WithdrawNativeBTC(uint256 amount, uint256 realAmount);
     event Initialize(
@@ -54,7 +55,7 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
             lorenzoAdmin_ == address(0) ||
             minimumWithdrawAmount_ <= 1000000
         ) {
-            revert InvalidParams();
+            revert InvalidParam();
         }
         __Pausable_init();
         __Ownable_init(owner_);
@@ -71,10 +72,18 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
 
     function setLockedFBTC(address lockedFBTC_) external onlyOwner {
         if (lockedFBTC_ == address(0)) {
-            revert InvalidParams();
+            revert InvalidParam();
         }
         lockedFBTC = lockedFBTC_;
         emit LockedFBTCSet(lockedFBTC);
+    }
+
+    function setLorenzoAdmin(address newLorenzoAdmin_) external onlyOwner {
+        if (newLorenzoAdmin_ == address(0)) {
+            revert InvalidParam();
+        }
+        lorenzoAdmin = newLorenzoAdmin_;
+        emit LorenzoAdminSet(newLorenzoAdmin_);
     }
 
     function pause() external onlyOwner {
@@ -89,13 +98,16 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
         uint256 minimumWithdrawAmount_
     ) external onlyLorenzoAdmin {
         if (minimumWithdrawAmount_ <= 1000000) {
-            revert InvalidParams();
+            revert InvalidParam();
         }
         minimumWithdrawAmount = minimumWithdrawAmount_;
         emit MinimumWithdrawAmountSet(minimumWithdrawAmount);
     }
 
     function withdrawNativeBTC() external whenNotPaused onlyLorenzoAdmin {
+        if (lockedFBTC == address(0)) {
+            revert InvalidParam();
+        }
         uint256 balance = IERC20(fbtc).balanceOf(address(this));
         if (balance < minimumWithdrawAmount) {
             revert LessThanMinimumWithdrawAmount();
