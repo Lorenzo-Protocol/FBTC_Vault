@@ -6,6 +6,7 @@ import 'hardhat-deploy'
 dotenv.config()
 
 const deployer = process.env.DEPLOY_PRIVATE_KEY || '0x' + '11'.repeat(32)
+const admin = process.env.ADMIN_PRIVATE_KEY || '0x' + '22'.repeat(32)
 
 const config: HardhatUserConfig = {
   solidity: "0.8.20",
@@ -16,18 +17,31 @@ const config: HardhatUserConfig = {
     bsc_testnet: {
       chainId: 97,
       url: process.env.BSC_TESTNET_RPC_URL || '',
-      accounts: [deployer],
+      accounts: [deployer, admin],
     },
     bsc: {
       chainId: 56,
       url: process.env.BSC_MAINNET_RPC_URL || '',
-      accounts: [deployer],
+      accounts: [deployer, admin],
+    },
+    mainnet: {
+      chainId: 1,
+      url: process.env.ETH_MAINNET_RPC_URL || '',
+      accounts: [deployer, admin],
+    },
+    sepolia: {
+      chainId: 11155111,
+      url: process.env.SEPOLIA_RPC_URL || '',
+      accounts: [deployer, admin],
     },
   },
   namedAccounts: {
     deployer: {
       default: 0,
-    }
+    },
+    admin: {
+      default: 1,
+    },
   },
   etherscan: {
     apiKey: {
