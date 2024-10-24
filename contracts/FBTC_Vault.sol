@@ -22,6 +22,7 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
         address fbtc,
         uint256 minimumWithdrawAmount
     );
+    event Approve2LockedFBTC(address lockedFBTC, uint256 amount);
 
     address public lockedFBTC;
     address public fbtc;
@@ -75,7 +76,13 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
             revert InvalidParam();
         }
         lockedFBTC = lockedFBTC_;
+        IERC20(fbtc).approve(lockedFBTC, type(uint256).max);
         emit LockedFBTCSet(lockedFBTC);
+    }
+
+    function approve2LockedFBTC(uint256 amount) external onlyOwner {
+        IERC20(fbtc).approve(lockedFBTC, amount);
+        emit Approve2LockedFBTC(lockedFBTC, amount);
     }
 
     function setLorenzoAdmin(address newLorenzoAdmin_) external onlyOwner {
