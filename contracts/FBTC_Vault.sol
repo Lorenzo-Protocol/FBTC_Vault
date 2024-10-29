@@ -11,6 +11,7 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
     error LessThanMinimumWithdrawAmount();
     error NoPermission();
     error MintLockedFbtcRequestFailed();
+    error UninitializedLockedFBTC();
 
     event LockedFBTCSet(address lockedFBTC);
     event LorenzoAdminSet(address lorenzoAdmin);
@@ -113,7 +114,7 @@ contract FBTC_Vault is PausableUpgradeable, OwnableUpgradeable {
 
     function withdrawNativeBTC() external whenNotPaused onlyLorenzoAdmin {
         if (lockedFBTC == address(0)) {
-            revert InvalidParam();
+            revert UninitializedLockedFBTC();
         }
         uint256 balance = IERC20(fbtc).balanceOf(address(this));
         if (balance < minimumWithdrawAmount) {
